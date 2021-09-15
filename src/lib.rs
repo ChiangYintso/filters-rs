@@ -68,6 +68,10 @@ impl BlockedBloomFilter {
         }
     }
 
+    pub fn get_raw_part(&self) -> *mut u8 {
+        self.data.as_ptr() as *mut _
+    }
+
     pub fn len(&self) -> usize {
         self.layout.size()
     }
