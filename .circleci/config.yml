@@ -10,7 +10,7 @@ jobs:
       - checkout
       - run: sudo apt-get -y update &&
              sudo apt-get -y install gcc g++ git cmake clang
-      - run: cargo test
+      - run: cd filters-rs && cargo test
 
 # Orchestrate or schedule a set of jobs
 workflows:
