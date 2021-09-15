@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use std::process::Command;
 
 fn main() {
+    Command::new("git").arg("submodule").arg("update").arg("--recursive").status().expect("git update failed");
+
     let profile = std::env::var("PROFILE").unwrap();
     Command::new("sh")
         .arg("-c")
