@@ -19,36 +19,57 @@ fn calc_bytes(num_keys: usize) -> usize {
 pub struct BlockedBloomFilter {
     data: NonNull<block_t>,
     layout: Layout,
-    mask: usize,
+    num_blocks: usize,
 }
 
+unsafe impl Send for BlockedBloomFilter {}
+
+unsafe impl Sync for BlockedBloomFilter {}
+
 impl BlockedBloomFilter {
+    pub fn from_vec(v: Vec<u8>) -> BlockedBloomFilter {
+        let layout = Layout::from_size_align(v.len(), 64).unwrap();
+        let data = NonNull::<block_t>::new(v.leak().as_ptr() as *mut u8 as *mut block_t).unwrap();
+        let num_blocks = unsafe {
+            bf_calc_num_blocks(layout.size() as _)
+        };
+        BlockedBloomFilter {
+            data,
+            layout,
+            num_blocks: num_blocks as usize,
+        }
+    }
+
     pub fn create_filter(num_keys: usize) -> BlockedBloomFilter {
         let layout = Layout::from_size_align(calc_bytes(num_keys), 64).unwrap();
         let data = NonNull::<block_t>::new(unsafe {
             std::alloc::alloc_zeroed(layout) as _
         }).unwrap();
 
-        let mask = unsafe {
+        let num_blocks = unsafe {
             bf_calc_num_blocks(layout.size() as _)
         };
         BlockedBloomFilter {
             data,
             layout,
-            mask: mask as usize,
+            num_blocks: num_blocks as usize,
         }
     }
 
     pub fn add(&mut self, h: u32) {
         unsafe {
-            bbf_add_key(h, self.data.as_mut(), self.mask as _);
+            bbf_add_key(h, self.data.as_mut(), self.num_blocks as _);
         }
     }
 
     pub fn may_contain(&self, h: u32) -> bool {
         unsafe {
-            bbf_find(h, self.data.as_ptr(), self.mask as _)
+            bbf_find(h, self.data.as_ptr(), self.num_blocks as _)
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.layout.size()
     }
 }
 
@@ -66,7 +87,7 @@ mod tests {
     use rand::Rng;
 
     fn rand_hashes(size: usize) -> Vec<u32> {
-        let mut hashes: Vec<u32> = Vec::with_capacity(size);
+        let mut hashes: Vec<u32> = vec![0; size];
         let mut rng = rand::thread_rng();
         rng.fill(hashes.as_mut_slice());
         hashes
@@ -78,16 +99,20 @@ mod tests {
         assert!(!bbf.may_contain(12345));
         bbf.add(12345);
         assert!(bbf.may_contain(12345));
+
+        let v = vec![12; 64];
+        let bbf = BlockedBloomFilter::from_vec(v);
+        assert_eq!(bbf.len(), 64);
     }
 
     #[test]
     fn test_contain_key() {
         let mut filter = BlockedBloomFilter::create_filter(10);
-        let hashs = rand_hashes(10);
-        for &h in &hashs {
+        let hashes = rand_hashes(10);
+        for &h in &hashes {
             filter.add(h);
         }
-        for h in hashs {
+        for h in hashes {
             assert!(filter.may_contain(h));
         }
     }
