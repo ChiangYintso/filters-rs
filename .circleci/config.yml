@@ -9,7 +9,7 @@ jobs:
     steps:
       - checkout
       - run: sudo apt-get -y update &&
-             sudo apt-get -y install gcc g++ git cmake
+             sudo apt-get -y install gcc g++ git cmake clang
       - run: cargo test
 
 # Orchestrate or schedule a set of jobs
