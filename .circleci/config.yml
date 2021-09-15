@@ -8,8 +8,8 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
     steps:
       - checkout
-      - run: apt-get -y update &&
-             apt-get -y install gcc git cmake
+      - run: sudo apt-get -y update &&
+             sudo apt-get -y install gcc g++ git cmake
       - run: cargo test
 
 # Orchestrate or schedule a set of jobs
