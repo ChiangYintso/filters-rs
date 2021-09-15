@@ -3,10 +3,14 @@ use std::path::PathBuf;
 use std::process::Command;
 
 fn main() {
-    Command::new("git").arg("submodule").arg("update").arg("--recursive").status().expect("git update failed");
+    Command::new("git")
+        .arg("submodule")
+        .arg("update")
+        .arg("--recursive")
+        .status()
+        .expect("git update failed");
 
-    let profile = std::env::var("PROFILE").unwrap();
-    let dst = cmake::Config::new("filters").profile(profile.as_str()).build();
+    let dst = cmake::Config::new("filters").build();
     println!("cargo:rustc-link-search=native={}", dst.display());
     println!("cargo:rustc-link-lib=static=blocked_bloom_filter");
 

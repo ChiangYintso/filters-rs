@@ -1,9 +1,9 @@
 mod bindings;
 
 use bindings::*;
-use std::ptr::NonNull;
 use std::alloc::Layout;
 use std::cmp::max;
+use std::ptr::NonNull;
 
 const BITS_PER_KEY: usize = 10;
 
@@ -29,9 +29,7 @@ unsafe impl Sync for BlockedBloomFilter {}
 impl BlockedBloomFilter {
     pub fn from_raw_part(ptr: *mut u8, len: usize) -> BlockedBloomFilter {
         let data = NonNull::<block_t>::new(ptr as *mut _).unwrap();
-        let num_blocks = unsafe {
-            bf_calc_num_blocks(len as _)
-        };
+        let num_blocks = unsafe { bf_calc_num_blocks(len as _) };
         BlockedBloomFilter {
             data,
             layout: Layout::from_size_align(len, 64).unwrap(),
@@ -41,13 +39,10 @@ impl BlockedBloomFilter {
 
     pub fn create_filter(num_keys: usize) -> BlockedBloomFilter {
         let layout = Layout::from_size_align(calc_bytes(num_keys), 64).unwrap();
-        let data = NonNull::<block_t>::new(unsafe {
-            std::alloc::alloc_zeroed(layout) as _
-        }).unwrap();
+        let data =
+            NonNull::<block_t>::new(unsafe { std::alloc::alloc_zeroed(layout) as _ }).unwrap();
 
-        let num_blocks = unsafe {
-            bf_calc_num_blocks(layout.size() as _)
-        };
+        let num_blocks = unsafe { bf_calc_num_blocks(layout.size() as _) };
         BlockedBloomFilter {
             data,
             layout,
@@ -62,9 +57,11 @@ impl BlockedBloomFilter {
     }
 
     pub fn may_contain(&self, h: u32) -> bool {
-        unsafe {
-            bbf_find(h, self.data.as_ptr(), self.num_blocks as _)
-        }
+        unsafe { bbf_find(h, self.data.as_ptr(), self.num_blocks as _) }
+    }
+
+    pub fn get_raw_part(&self) -> *mut u8 {
+        self.data.as_ptr() as *mut _
     }
 
     pub fn get_raw_part(&self) -> *mut u8 {
