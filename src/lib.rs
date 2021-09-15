@@ -27,15 +27,14 @@ unsafe impl Send for BlockedBloomFilter {}
 unsafe impl Sync for BlockedBloomFilter {}
 
 impl BlockedBloomFilter {
-    pub fn from_vec(v: Vec<u8>) -> BlockedBloomFilter {
-        let layout = Layout::from_size_align(v.len(), 64).unwrap();
-        let data = NonNull::<block_t>::new(v.leak().as_ptr() as *mut u8 as *mut block_t).unwrap();
+    pub fn from_raw_part(ptr: *mut u8, len: usize) -> BlockedBloomFilter {
+        let data = NonNull::<block_t>::new(ptr as *mut _).unwrap();
         let num_blocks = unsafe {
-            bf_calc_num_blocks(layout.size() as _)
+            bf_calc_num_blocks(len as _)
         };
         BlockedBloomFilter {
             data,
-            layout,
+            layout: Layout::from_size_align(len, 64).unwrap(),
             num_blocks: num_blocks as usize,
         }
     }
@@ -66,6 +65,10 @@ impl BlockedBloomFilter {
         unsafe {
             bbf_find(h, self.data.as_ptr(), self.num_blocks as _)
         }
+    }
+
+    pub fn get_raw_part(&self) -> *mut u8 {
+        self.data.as_ptr() as *mut _
     }
 
     pub fn len(&self) -> usize {
@@ -101,7 +104,8 @@ mod tests {
         assert!(bbf.may_contain(12345));
 
         let v = vec![12; 64];
-        let bbf = BlockedBloomFilter::from_vec(v);
+        let v = v.leak();
+        let bbf = BlockedBloomFilter::from_raw_part(v.as_mut_ptr(), v.len());
         assert_eq!(bbf.len(), 64);
     }
 
