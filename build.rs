@@ -6,15 +6,9 @@ fn main() {
     Command::new("git").arg("submodule").arg("update").arg("--recursive").status().expect("git update failed");
 
     let profile = std::env::var("PROFILE").unwrap();
-    Command::new("sh")
-        .arg("-c")
-        .arg("./build_filters.sh")
-        .arg(profile.as_str())
-        .status()
-        .expect("build_filters.sh failed");
-
-    println!("cargo:rustc-link-search=target/filters_build");
-    println!("cargo:rustc-link-lib=blocked_bloom_filter");
+    let dst = cmake::Config::new("filters").profile(profile.as_str()).build();
+    println!("cargo:rustc-link-search=native={}", dst.display());
+    println!("cargo:rustc-link-lib=static=blocked_bloom_filter");
 
     // The bindgen::Builder is the main entry point
     // to bindgen, and lets you build up options for

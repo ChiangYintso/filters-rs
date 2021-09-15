@@ -13,4 +13,4 @@ rand = "*"
 
 [build-dependencies]
 bindgen = "0.59.1"
-
+cmake = "*"
